@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-demo
+  template:
+    metadata:
+      labels:
+        app: insecure-demo
+    spec:
+      containers:
+      - name: insecure-container
+        image: nginx:latest
+        securityContext:
+          privileged: true  # This should be blocked by Kyverno
+          runAsUser: 0      # Running as root
+        # Missing resources section should also be blocked by Kyverno
