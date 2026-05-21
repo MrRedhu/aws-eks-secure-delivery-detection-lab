@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-demo-api
+  namespace: secure-demo
+  labels:
+    app.kubernetes.io/name: secure-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: secure-demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: secure-demo
+    spec:
+      serviceAccountName: secure-demo-sa
+      # Apply pod-level security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+      - name: api
+        image: secure-demo-api:latest # Will be overridden in CI
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        # Apply container-level security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
+        # Require resource limits (Kyverno policy will check this)
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+        # Health probes
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
