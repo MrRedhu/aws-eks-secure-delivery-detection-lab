@@ -1,0 +1,4 @@
+region      = "us-east-1"
+environment = "dev"
+project     = "aws-eks-secure-delivery-detection-lab"
+github_repo = "MrRedhu/aws-eks-secure-delivery-detection-lab"
