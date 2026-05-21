@@ -1,0 +1,85 @@
+name: CI Security Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'kubernetes/**'
+      - 'policies/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'kubernetes/**'
+      - 'policies/**'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  test-and-scan:
+    name: App Tests and Container Scans
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Run Pytest
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install pytest httpx
+          pytest app/tests
+
+      - name: Trivy Filesystem Scan (Secrets and Misconfigs)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy FS SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: trivy-fs
+
+      - name: Build Docker Image
+        run: docker build -t secure-demo-api:${{ github.sha }} app/
+
+      - name: Trivy Image Scan (Vulnerabilities)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'secure-demo-api:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      - name: Upload Trivy Image SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+          category: trivy-image
+
+      - name: Install Kyverno CLI
+        run: |
+          curl -LO https://github.com/kyverno/kyverno/releases/download/v1.12.0/kyverno-cli_v1.12.0_linux_x86_64.tar.gz
+          tar -xvf kyverno-cli_v1.12.0_linux_x86_64.tar.gz
+          sudo mv kyverno /usr/local/bin/
+
+      - name: Kyverno Manifest Scan
+        run: |
+          kyverno apply policies/ --resource kubernetes/
