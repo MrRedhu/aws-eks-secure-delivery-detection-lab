@@ -118,4 +118,4 @@ Evidence files:
 - `evidence/guardduty-findings/sample-finding-evidence.md`
 - `evidence/eventbridge-routing/lambda-sns-routing-evidence.md`
 
-The SNS email confirmation was resent to the configured endpoint and is waiting for the inbox confirmation link to be clicked.
+The SNS email subscription is confirmed. A final SNS publish test returned message ID `017018d8-bbce-55ca-8e2f-7a52719ddbaa`.

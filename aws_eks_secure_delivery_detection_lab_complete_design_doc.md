@@ -1643,7 +1643,7 @@ The project is portfolio-ready when all required items below are complete.
 - [x] EventBridge routes a high-severity finding.
 - [x] Lambda enriches the alert.
 - [x] SNS topic is provisioned and Lambda publishes alerts.
-- [ ] SNS email subscription is confirmed.
+- [x] SNS email subscription is confirmed.
 
 ### 28.3 Documentation Criteria
 

@@ -26,4 +26,8 @@ Alert published to SNS: ab3a5414-2fed-51ad-ba82-369ee79ff2dc
 
 ## SNS Subscription Status
 
-The email endpoint was re-subscribed and AWS sent a confirmation email. Final email delivery depends on the recipient clicking the AWS SNS confirmation link.
+The email endpoint is confirmed. A direct SNS publish test returned:
+
+```text
+MessageId: 017018d8-bbce-55ca-8e2f-7a52719ddbaa
+```
