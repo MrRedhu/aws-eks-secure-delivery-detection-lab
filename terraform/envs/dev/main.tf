@@ -2,6 +2,7 @@ variable "region" { default = "us-east-1" }
 variable "environment" { default = "dev" }
 variable "project" { default = "aws-eks-secure-delivery-detection-lab" }
 variable "github_repo" { default = "MrRedhu/aws-eks-secure-delivery-detection-lab" }
+variable "alert_email" { default = "admin@example.com" }
 
 provider "aws" {
   region = var.region
@@ -56,4 +57,12 @@ module "budget" {
   source      = "../../modules/budget"
   environment = var.environment
   project     = var.project
+}
+
+module "detection" {
+  source       = "../../modules/detection"
+  environment  = var.environment
+  project      = var.project
+  cluster_name = module.eks.cluster_name
+  alert_email  = var.alert_email
 }

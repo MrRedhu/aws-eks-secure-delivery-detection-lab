@@ -8,7 +8,7 @@ module "eks" {
   # checkov:skip=CKV_TF_1:Using public registry version for lab
   # checkov:skip=CKV_TF_2:Using public registry version for lab
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.0"
 
   cluster_name    = "${var.project}-${var.environment}"
   cluster_version = "1.30"
