@@ -25,24 +25,25 @@ bootstrap-apply:
 	cd terraform/bootstrap && terraform apply
 
 init:
-	cd terraform/envs/dev && terraform init -backend-config=backend.hcl
+	terraform -chdir=terraform/envs/dev init -backend-config ./backend.hcl
 
 plan:
-	cd terraform/envs/dev && terraform plan
+	terraform -chdir=terraform/envs/dev plan
 
 apply:
-	cd terraform/envs/dev && terraform apply -auto-approve
+	terraform -chdir=terraform/envs/dev apply -auto-approve
 
 destroy:
-	cd terraform/envs/dev && terraform destroy -auto-approve
+	terraform -chdir=terraform/envs/dev destroy -auto-approve
 
 test:
 	pytest app/tests/ lambda/guardduty_finding_router/tests/
 
+validate: export TF_DATA_DIR=.terraform-validate
 validate:
 	terraform fmt -check -recursive terraform
-	cd terraform/envs/dev && terraform init -backend=false -reconfigure
-	cd terraform/envs/dev && terraform validate -no-color
+	terraform -chdir=terraform/envs/dev init -backend=false -reconfigure
+	terraform -chdir=terraform/envs/dev validate -no-color
 
 scan-iac:
 	checkov -d terraform/ --framework terraform --skip-path terraform/envs/dev/.terraform --skip-check CKV_AWS_18,CKV_AWS_109,CKV_AWS_111,CKV_AWS_144,CKV_AWS_274,CKV_AWS_356,CKV_TF_1,CKV_TF_2,CKV2_AWS_56,CKV2_AWS_62,CKV2_AWS_64

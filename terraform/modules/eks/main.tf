@@ -21,6 +21,9 @@ module "eks" {
   cluster_name    = "${var.project}-${var.environment}"
   cluster_version = "1.35"
 
+  iam_role_name            = "${var.project}-${var.environment}-eks"
+  iam_role_use_name_prefix = false
+
   vpc_id                               = var.vpc_id
   subnet_ids                           = var.private_subnets
   cluster_endpoint_private_access      = true
