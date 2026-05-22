@@ -1618,7 +1618,7 @@ flowchart TD
 
 ## 28. Acceptance Criteria
 
-The project is portfolio-ready when all required items below are complete. Items marked "skipped" are intentionally out of scope for the final portfolio state.
+The project is portfolio-ready when all required items below are complete.
 
 ### 28.1 Build Criteria
 
@@ -1642,7 +1642,8 @@ The project is portfolio-ready when all required items below are complete. Items
 - [x] Security Hub EKS controls are captured.
 - [x] EventBridge routes a high-severity finding.
 - [x] Lambda enriches the alert.
-- [x] SNS topic and subscription are provisioned; email confirmation intentionally skipped.
+- [x] SNS topic is provisioned and Lambda publishes alerts.
+- [ ] SNS email subscription is confirmed.
 
 ### 28.3 Documentation Criteria
 

@@ -109,6 +109,13 @@ git diff --check: passed
 
 Checkov printed a warning about an optional Prisma Cloud guideline lookup failing through the local proxy. The Terraform scan itself completed successfully with zero failed checks.
 
-## Completion Note
+## Detection Routing Evidence
 
-The lab is complete for portfolio review. The SNS topic and email subscription are provisioned by Terraform, and the Lambda router is implemented and covered by tests. The final email confirmation click is intentionally skipped because it depends on an inbox-side action rather than repository or infrastructure correctness.
+GuardDuty sample findings were generated successfully. A high-severity sample finding matched the EventBridge rule, invoked the Lambda router, and produced SNS publish message IDs in CloudWatch Logs.
+
+Evidence files:
+
+- `evidence/guardduty-findings/sample-finding-evidence.md`
+- `evidence/eventbridge-routing/lambda-sns-routing-evidence.md`
+
+The SNS email confirmation was resent to the configured endpoint and is waiting for the inbox confirmation link to be clicked.

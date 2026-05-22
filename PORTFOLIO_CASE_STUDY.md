@@ -19,6 +19,7 @@ I engineered an end-to-end AWS EKS lab that combines preventative DevSecOps cont
 - Rolled out the hardened `secure-demo-api` workload from private ECR.
 - Verified IRSA injection in the running pod.
 - Verified Kyverno policy status and confirmed the secure-demo workload passes all six policy checks.
+- Verified GuardDuty sample findings route through EventBridge to Lambda and SNS.
 - Restored the EKS API endpoint to private-only access after the deployment window.
 - Achieved local validation results of `6 passed` unit tests and `182 passed, 0 failed` Checkov checks.
 
