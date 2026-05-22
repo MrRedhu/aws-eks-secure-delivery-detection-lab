@@ -14,7 +14,7 @@ This guide helps a reviewer evaluate the project quickly without needing AWS acc
    - `.github/workflows/deploy-dev.yml`
    - `policies/kyverno/`
    - `kubernetes/deployment.yaml`
-   - `lambda/guardduty_finding_router/src/handler.py`
+   - `terraform/modules/detection/src/router.py`
 
 ## What To Look For
 

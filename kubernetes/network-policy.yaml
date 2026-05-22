@@ -18,6 +18,11 @@ spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/name: secure-demo
+    matchExpressions:
+      - key: quarantine
+        operator: NotIn
+        values:
+          - "true"
   policyTypes:
     - Ingress
   ingress:
@@ -36,6 +41,11 @@ spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/name: secure-demo
+    matchExpressions:
+      - key: quarantine
+        operator: NotIn
+        values:
+          - "true"
   policyTypes:
     - Egress
   egress:

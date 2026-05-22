@@ -255,8 +255,7 @@ aws-eks-secure-delivery-detection-lab/
 │   │   ├── cloudtrail/
 │   │   ├── aws-config/
 │   │   ├── securityhub/
-│   │   ├── guardduty/
-│   │   ├── detection-routing/
+│   │   ├── detection/
 │   │   └── budget/
 │   └── envs/
 │       └── dev/
@@ -559,7 +558,7 @@ Creates/enables:
 - EKS-related controls
 - GuardDuty integration evidence
 
-#### `modules/guardduty`
+#### `modules/detection`
 
 Creates/enables:
 
@@ -567,11 +566,6 @@ Creates/enables:
 - EKS audit log monitoring
 - Runtime Monitoring for EKS resources
 - GuardDuty agent management where supported
-
-#### `modules/detection-routing`
-
-Creates:
-
 - EventBridge rule for GuardDuty findings
 - Lambda function
 - SNS topic

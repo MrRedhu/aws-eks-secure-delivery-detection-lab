@@ -12,7 +12,7 @@
    ```bash
    kubectl label pod <pod-name> -n <namespace> quarantine=true
    ```
-   *(Assuming a NetworkPolicy is in place that drops all traffic to pods with the quarantine label).*
+   The `secure-demo` NetworkPolicies exclude pods with `quarantine=true` from the normal ingress and egress allow rules, leaving the default deny policy in effect.
 2. Do NOT delete the pod immediately, to preserve forensic evidence.
 
 ## 3. Remediation

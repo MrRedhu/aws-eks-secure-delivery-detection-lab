@@ -1,3 +1,6 @@
+PYTHON ?= .venv/Scripts/python.exe
+PYTEST ?= .venv/Scripts/pytest.exe
+
 .PHONY: help bootstrap-init bootstrap-plan bootstrap-apply init plan apply destroy test scan-iac scan-image scan-k8s validate
 
 help:
@@ -37,16 +40,15 @@ destroy:
 	terraform -chdir=terraform/envs/dev destroy -auto-approve
 
 test:
-	pytest app/tests/ lambda/guardduty_finding_router/tests/
+	$(PYTEST) -p no:cacheprovider app/tests/ lambda/guardduty_finding_router/tests/
 
 validate: export TF_DATA_DIR=.terraform-validate
 validate:
 	terraform fmt -check -recursive terraform
-	terraform -chdir=terraform/envs/dev init -backend=false -reconfigure
 	terraform -chdir=terraform/envs/dev validate -no-color
 
 scan-iac:
-	checkov -d terraform/ --framework terraform --skip-path terraform/envs/dev/.terraform --skip-check CKV_AWS_18,CKV_AWS_109,CKV_AWS_111,CKV_AWS_144,CKV_AWS_274,CKV_AWS_356,CKV_TF_1,CKV_TF_2,CKV2_AWS_56,CKV2_AWS_62,CKV2_AWS_64
+	$(PYTHON) -m checkov.main -d terraform/ --framework terraform --skip-path terraform/envs/dev/.terraform --skip-check CKV_AWS_18,CKV_AWS_109,CKV_AWS_111,CKV_AWS_144,CKV_AWS_274,CKV_AWS_356,CKV_TF_1,CKV_TF_2,CKV2_AWS_56,CKV2_AWS_62,CKV2_AWS_64
 
 scan-image:
 	trivy config app/Dockerfile

@@ -25,10 +25,10 @@ jobs:
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
           
@@ -41,7 +41,7 @@ jobs:
           pytest app/tests lambda/guardduty_finding_router/tests
 
       - name: Trivy Filesystem Scan (Secrets and Misconfigs)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -52,7 +52,7 @@ jobs:
 
       - name: Upload Trivy FS SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@78ed0c7291d93e40c51b085850dc669a4c3ab73b # v3
         with:
           sarif_file: 'trivy-fs-results.sarif'
           category: trivy-fs
@@ -61,7 +61,7 @@ jobs:
         run: docker build -t secure-demo-api:${{ github.sha }} app/
 
       - name: Trivy Image Scan (Vulnerabilities)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
           image-ref: 'secure-demo-api:${{ github.sha }}'
           format: 'sarif'
@@ -72,7 +72,7 @@ jobs:
 
       - name: Upload Trivy Image SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@78ed0c7291d93e40c51b085850dc669a4c3ab73b # v3
         with:
           sarif_file: 'trivy-image-results.sarif'
           category: trivy-image
