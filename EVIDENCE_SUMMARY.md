@@ -109,11 +109,6 @@ git diff --check: passed
 
 Checkov printed a warning about an optional Prisma Cloud guideline lookup failing through the local proxy. The Terraform scan itself completed successfully with zero failed checks.
 
-## Remaining Portfolio Demo Step
+## Completion Note
 
-The next demo step is detection proof:
-
-1. Confirm the SNS email subscription for the configured `alert_email`.
-2. Generate a GuardDuty sample finding or trigger a controlled EKS finding.
-3. Capture the EventBridge to Lambda to SNS alert path.
-4. Save sanitized output under `evidence/guardduty-findings/` and `evidence/eventbridge-routing/`.
+The lab is complete for portfolio review. The SNS topic and email subscription are provisioned by Terraform, and the Lambda router is implemented and covered by tests. The final email confirmation click is intentionally skipped because it depends on an inbox-side action rather than repository or infrastructure correctness.

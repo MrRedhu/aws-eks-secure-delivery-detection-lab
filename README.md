@@ -30,6 +30,8 @@ The dev environment has been deployed and validated in `us-east-1`. Account-spec
 | App health | `/health` returned `{"status":"ok"}` |
 | IRSA | `AWS_ROLE_ARN` and web identity token injected into pod |
 | Kyverno workload result | secure-demo workload passed all 6 policies |
+| Detection routing | EventBridge, Lambda formatter, and SNS topic implemented |
+| SNS email confirmation | Intentionally skipped for portfolio completion |
 | Tests | 6 passed |
 | Checkov | 182 passed, 0 failed, 6 skipped |
 

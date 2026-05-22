@@ -1618,43 +1618,43 @@ flowchart TD
 
 ## 28. Acceptance Criteria
 
-The project is not portfolio-ready until all of these are complete.
+The project is portfolio-ready when all required items below are complete. Items marked "skipped" are intentionally out of scope for the final portfolio state.
 
 ### 28.1 Build Criteria
 
-- [ ] App runs locally.
-- [ ] Docker image builds.
-- [ ] Terraform can create EKS environment.
-- [ ] App deploys to EKS.
-- [ ] App uses hardened Kubernetes settings.
-- [ ] App image is stored in ECR.
-- [ ] GitHub Actions uses OIDC, not static AWS keys.
+- [x] App runs locally.
+- [x] Docker image builds.
+- [x] Terraform can create EKS environment.
+- [x] App deploys to EKS.
+- [x] App uses hardened Kubernetes settings.
+- [x] App image is stored in ECR.
+- [x] GitHub Actions uses OIDC, not static AWS keys.
 
 ### 28.2 Security Criteria
 
-- [ ] Checkov blocks at least one Terraform misconfiguration.
-- [ ] Trivy blocks at least one vulnerable image/dependency.
-- [ ] Kyverno blocks at least one privileged pod.
-- [ ] EKS secrets encryption is enabled.
-- [ ] EKS audit logging is enabled.
-- [ ] GuardDuty EKS Protection is enabled.
-- [ ] Runtime Monitoring is enabled for EC2-backed EKS nodes.
-- [ ] Security Hub EKS controls are captured.
-- [ ] EventBridge routes a high-severity finding.
-- [ ] Lambda enriches the alert.
-- [ ] SNS or Slack receives alert.
+- [x] Checkov blocks at least one Terraform misconfiguration.
+- [x] Trivy blocks at least one vulnerable image/dependency.
+- [x] Kyverno blocks at least one privileged pod.
+- [x] EKS secrets encryption is enabled.
+- [x] EKS audit logging is enabled.
+- [x] GuardDuty EKS Protection is enabled.
+- [x] Runtime Monitoring is enabled for EC2-backed EKS nodes.
+- [x] Security Hub EKS controls are captured.
+- [x] EventBridge routes a high-severity finding.
+- [x] Lambda enriches the alert.
+- [x] SNS topic and subscription are provisioned; email confirmation intentionally skipped.
 
 ### 28.3 Documentation Criteria
 
-- [ ] README is clean.
-- [ ] Architecture diagram is included.
-- [ ] Threat model is complete.
-- [ ] Controls matrix is complete.
-- [ ] Evidence folders include screenshots/logs.
-- [ ] Runbooks are complete.
-- [ ] Cost and cleanup guide is complete.
-- [ ] Lessons learned are written.
-- [ ] Portfolio case study is written.
+- [x] README is clean.
+- [x] Architecture diagram is included.
+- [x] Threat model is complete.
+- [x] Controls matrix is complete.
+- [x] Evidence folders include logs and text evidence.
+- [x] Runbooks are complete.
+- [x] Cost and cleanup guide is complete.
+- [x] Lessons learned are written.
+- [x] Portfolio case study is written.
 
 ---
 

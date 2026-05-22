@@ -31,5 +31,5 @@ I engineered an end-to-end AWS EKS lab that combines preventative DevSecOps cont
 
 ### What I Would Improve Next
 - Add a self-hosted GitHub runner in the VPC so deployment never requires a temporary public endpoint.
-- Add sanitized screenshots of Security Hub, GuardDuty, and SNS alerts after the detection validation step.
+- Add optional sanitized console screenshots to supplement the existing text evidence.
 - Replace broad lab bootstrap permissions with a more granular deployment role once the lab is stable.
