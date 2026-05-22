@@ -7,6 +7,10 @@ variable "cluster_endpoint_public_access_cidrs" {
   type    = list(string)
   default = []
 }
+variable "manage_aws_config_recorder" {
+  type    = bool
+  default = false
+}
 
 provider "aws" {
   region = var.region
@@ -14,7 +18,7 @@ provider "aws" {
     tags = {
       Project     = var.project
       Environment = var.environment
-      Owner       = "ojash"
+      Owner       = "Aryan"
       ManagedBy   = "terraform"
       TTL         = "manual-destroy"
       CostCenter  = "portfolio-lab"
@@ -70,9 +74,10 @@ module "budget" {
 }
 
 module "aws_config" {
-  source      = "../../modules/aws-config"
-  environment = var.environment
-  project     = var.project
+  source                      = "../../modules/aws-config"
+  environment                 = var.environment
+  project                     = var.project
+  manage_configuration_record = var.manage_aws_config_recorder
 }
 
 module "cloudtrail" {

@@ -68,6 +68,20 @@ data "aws_iam_policy_document" "trail_kms" {
     }
     resources = ["*"]
   }
+
+  statement {
+    sid = "AllowCloudTrailSNSKMSUse"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+    resources = ["*"]
+  }
 }
 
 resource "aws_kms_key" "trail" {

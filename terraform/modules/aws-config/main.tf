@@ -1,5 +1,9 @@
 variable "environment" { type = string }
 variable "project" { type = string }
+variable "manage_configuration_record" {
+  type    = bool
+  default = true
+}
 
 data "aws_caller_identity" "current" {}
 data "aws_iam_policy_document" "assume_role" {
@@ -134,6 +138,8 @@ resource "aws_iam_role_policy" "config_delivery" {
 }
 
 resource "aws_config_configuration_recorder" "primary" {
+  count = var.manage_configuration_record ? 1 : 0
+
   name     = "${var.project}-${var.environment}"
   role_arn = aws_iam_role.config.arn
 
@@ -144,6 +150,8 @@ resource "aws_config_configuration_recorder" "primary" {
 }
 
 resource "aws_config_delivery_channel" "primary" {
+  count = var.manage_configuration_record ? 1 : 0
+
   name           = "${var.project}-${var.environment}"
   s3_bucket_name = aws_s3_bucket.config.bucket
 
@@ -153,10 +161,12 @@ resource "aws_config_delivery_channel" "primary" {
 }
 
 resource "aws_config_configuration_recorder_status" "primary" {
-  name       = aws_config_configuration_recorder.primary.name
+  count = var.manage_configuration_record ? 1 : 0
+
+  name       = aws_config_configuration_recorder.primary[0].name
   is_enabled = true
   depends_on = [
-    aws_config_delivery_channel.primary,
+    aws_config_delivery_channel.primary[0],
     aws_iam_role_policy.config_delivery,
     aws_iam_role_policy_attachment.config
   ]

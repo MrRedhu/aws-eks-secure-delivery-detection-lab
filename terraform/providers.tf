@@ -4,7 +4,7 @@ provider "aws" {
     tags = {
       Project     = var.project
       Environment = var.environment
-      Owner       = "ojash"
+      Owner       = "Aryan"
       ManagedBy   = "terraform"
       TTL         = "manual-destroy"
       CostCenter  = "portfolio-lab"

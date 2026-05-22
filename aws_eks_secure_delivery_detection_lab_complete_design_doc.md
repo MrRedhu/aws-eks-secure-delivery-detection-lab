@@ -469,7 +469,7 @@ All AWS resources that support tags should include:
 ```hcl
 Project     = "aws-eks-secure-delivery-detection-lab"
 Environment = "dev"
-Owner       = "ojash"
+Owner       = "Aryan"
 ManagedBy   = "terraform"
 TTL         = "manual-destroy"
 CostCenter  = "portfolio-lab"
