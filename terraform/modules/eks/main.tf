@@ -11,6 +11,10 @@ variable "cluster_endpoint_public_access_cidrs" {
   type    = list(string)
   default = []
 }
+variable "cluster_admin_principal_arns" {
+  type    = list(string)
+  default = []
+}
 
 module "eks" {
   # checkov:skip=CKV_TF_1:Using public registry version for lab
@@ -28,7 +32,22 @@ module "eks" {
   subnet_ids                           = var.private_subnets
   cluster_endpoint_private_access      = true
   cluster_endpoint_public_access       = var.cluster_endpoint_public_access
-  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access ? var.cluster_endpoint_public_access_cidrs : null
+
+  access_entries = {
+    for principal_arn in var.cluster_admin_principal_arns :
+    replace(replace(replace(replace(principal_arn, ":", "_"), "/", "_"), "-", "_"), ".", "_") => {
+      principal_arn = principal_arn
+      policy_associations = {
+        cluster_admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 
   cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 

@@ -16,6 +16,15 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - kyverno
+                - amazon-guardduty
       validate:
         message: "Containers must set privileged=false and allowPrivilegeEscalation=false."
         pattern:

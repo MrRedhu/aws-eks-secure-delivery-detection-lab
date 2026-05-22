@@ -94,12 +94,9 @@ jobs:
 
       - name: Install Kyverno
         run: |
-          helm repo add kyverno https://kyverno.github.io/kyverno/
-          helm repo update
-          helm upgrade --install kyverno kyverno/kyverno \
-            -n kyverno --create-namespace \
-            --set admissionController.replicas=1
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=180s
+          kubectl apply --server-side --force-conflicts \
+            -f https://github.com/kyverno/kyverno/releases/download/v1.17.1/install.yaml
+          kubectl -n kyverno wait --for=condition=available deployment --all --timeout=300s
 
       - name: Apply Policies
         run: kubectl apply -f policies/kyverno --recursive

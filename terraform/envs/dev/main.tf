@@ -11,6 +11,10 @@ variable "manage_aws_config_recorder" {
   type    = bool
   default = false
 }
+variable "cluster_admin_principal_arns" {
+  type    = list(string)
+  default = []
+}
 
 provider "aws" {
   region = var.region
@@ -24,6 +28,20 @@ provider "aws" {
       CostCenter  = "portfolio-lab"
     }
   }
+}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  account_root_arn        = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+  github_actions_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project}-${var.environment}-github-actions"
+  cluster_admin_principal_arns = distinct(concat(
+    [
+      local.account_root_arn,
+      local.github_actions_role_arn
+    ],
+    var.cluster_admin_principal_arns
+  ))
 }
 
 module "vpc" {
@@ -54,6 +72,7 @@ module "eks" {
   kms_key_arn                          = module.kms.key_arn
   cluster_endpoint_public_access       = var.cluster_endpoint_public_access
   cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+  cluster_admin_principal_arns         = local.cluster_admin_principal_arns
 }
 
 module "app_irsa" {
