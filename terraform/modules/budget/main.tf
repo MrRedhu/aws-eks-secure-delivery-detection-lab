@@ -1,5 +1,6 @@
 variable "environment" { type = string }
 variable "project" { type = string }
+variable "alert_email" { type = string }
 
 resource "aws_budgets_budget" "lab_budget" {
   name         = "${var.project}-${var.environment}-monthly"
@@ -13,6 +14,6 @@ resource "aws_budgets_budget" "lab_budget" {
     threshold                  = 80
     threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
-    subscriber_email_addresses = ["admin@example.com"]
+    subscriber_email_addresses = [var.alert_email]
   }
 }

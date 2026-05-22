@@ -1,4 +1,10 @@
 region      = "us-east-1"
 environment = "dev"
 project     = "aws-eks-secure-delivery-detection-lab"
-github_repo = "MrRedhu/aws-eks-secure-delivery-detection-lab"
+alert_email = "admin@example.com"
+
+# Keep false for strongest EKS endpoint posture. Set true with your /32 CIDR
+# temporarily if you need kubectl access from your workstation or GitHub-hosted
+# runners for the demo deployment workflow.
+cluster_endpoint_public_access       = false
+cluster_endpoint_public_access_cidrs = []

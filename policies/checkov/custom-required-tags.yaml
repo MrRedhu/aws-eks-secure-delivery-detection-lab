@@ -1,0 +1,10 @@
+metadata:
+  name: "Required lab tags are present"
+  id: "CKV2_CUSTOM_1"
+  category: "GENERAL_SECURITY"
+definition:
+  cond_type: "attribute"
+  resource_types:
+    - "aws_*"
+  attribute: "tags"
+  operator: "exists"

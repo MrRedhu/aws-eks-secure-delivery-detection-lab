@@ -22,9 +22,11 @@ spec:
         runAsUser: 10001
         runAsGroup: 10001
         fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: api
-        image: secure-demo-api:latest # Will be overridden in CI
+        image: 000000000000.dkr.ecr.us-east-1.amazonaws.com/aws-eks-secure-delivery-detection-lab-dev-api:placeholder
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

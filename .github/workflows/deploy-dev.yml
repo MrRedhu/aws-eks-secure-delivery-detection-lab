@@ -1,0 +1,125 @@
+name: Deploy Dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      cluster_endpoint_public_access_cidrs:
+        description: Optional comma-separated /32 CIDRs for GitHub-hosted runner or workstation kubectl access
+        required: false
+        default: ""
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_DIR: terraform/envs/dev
+
+jobs:
+  deploy:
+    name: Provision AWS and Deploy App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-eks-secure-delivery-detection-lab-dev-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Write Backend Config
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          cat > backend.hcl <<EOF
+          bucket         = "eks-sec-delivery-dev-tfstate-${ACCOUNT_ID}"
+          key            = "dev/terraform.tfstate"
+          region         = "${AWS_REGION}"
+          dynamodb_table = "aws-eks-secure-delivery-detection-lab-dev-tf-locks"
+          encrypt        = true
+          EOF
+
+      - name: Write Deploy Variables
+        if: github.event.inputs.cluster_endpoint_public_access_cidrs != ''
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          CIDRS="${{ github.event.inputs.cluster_endpoint_public_access_cidrs }}"
+          CSV_JSON="$(printf '%s' "$CIDRS" | awk -F, '{printf "["; for (i=1; i<=NF; i++) {gsub(/^ +| +$/, "", $i); printf "%s\"%s\"", (i>1?",":""), $i} printf "]"}')"
+          cat > deploy.auto.tfvars.json <<EOF
+          {
+            "cluster_endpoint_public_access": true,
+            "cluster_endpoint_public_access_cidrs": ${CSV_JSON}
+          }
+          EOF
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform init -backend-config=backend.hcl
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform apply -auto-approve
+
+      - name: Read Terraform Outputs
+        id: tf
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          echo "cluster_name=$(terraform output -raw cluster_name)" >> "$GITHUB_OUTPUT"
+          echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)" >> "$GITHUB_OUTPUT"
+          echo "app_irsa_role_arn=$(terraform output -raw app_irsa_role_arn)" >> "$GITHUB_OUTPUT"
+
+      - name: Login to ECR
+        run: |
+          REGISTRY="${{ steps.tf.outputs.ecr_repository_url }}"
+          REGISTRY="${REGISTRY%/*}"
+          aws ecr get-login-password --region "${AWS_REGION}" \
+            | docker login --username AWS --password-stdin "$REGISTRY"
+
+      - name: Build and Push Image
+        run: |
+          IMAGE="${{ steps.tf.outputs.ecr_repository_url }}:${GITHUB_SHA}"
+          docker build -t "$IMAGE" app/
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Update Kubeconfig
+        run: aws eks update-kubeconfig --region "${AWS_REGION}" --name "${{ steps.tf.outputs.cluster_name }}"
+
+      - name: Install Kyverno
+        run: |
+          helm repo add kyverno https://kyverno.github.io/kyverno/
+          helm repo update
+          helm upgrade --install kyverno kyverno/kyverno \
+            -n kyverno --create-namespace \
+            --set admissionController.replicas=1
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=180s
+
+      - name: Apply Policies
+        run: kubectl apply -f policies/kyverno --recursive
+
+      - name: Render Kubernetes Manifests
+        run: |
+          mkdir -p rendered
+          cp kubernetes/namespace.yaml rendered/namespace.yaml
+          cp kubernetes/service-account.yaml rendered/service-account.yaml
+          cp kubernetes/deployment.yaml rendered/deployment.yaml
+          cp kubernetes/service.yaml rendered/service.yaml
+          cp kubernetes/network-policy.yaml rendered/network-policy.yaml
+          sed -i "s#APP_IRSA_ROLE_ARN_PLACEHOLDER#${{ steps.tf.outputs.app_irsa_role_arn }}#g" rendered/service-account.yaml
+          sed -i "s#000000000000.dkr.ecr.us-east-1.amazonaws.com/aws-eks-secure-delivery-detection-lab-dev-api:placeholder#${IMAGE}#g" rendered/deployment.yaml
+
+      - name: Deploy App
+        run: |
+          kubectl apply -f rendered/namespace.yaml
+          kubectl apply -f rendered/service-account.yaml
+          kubectl apply -f rendered/deployment.yaml
+          kubectl apply -f rendered/service.yaml
+          kubectl apply -f rendered/network-policy.yaml
+          kubectl -n secure-demo rollout status deployment/secure-demo-api --timeout=180s

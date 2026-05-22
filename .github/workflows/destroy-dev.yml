@@ -1,0 +1,55 @@
+name: Destroy Dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type destroy-dev to confirm
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_DIR: terraform/envs/dev
+
+jobs:
+  destroy:
+    name: Destroy Dev Infrastructure
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'destroy-dev'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/aws-eks-secure-delivery-detection-lab-dev-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Write Backend Config
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          cat > backend.hcl <<EOF
+          bucket         = "eks-sec-delivery-dev-tfstate-${ACCOUNT_ID}"
+          key            = "dev/terraform.tfstate"
+          region         = "${AWS_REGION}"
+          dynamodb_table = "aws-eks-secure-delivery-detection-lab-dev-tf-locks"
+          encrypt        = true
+          EOF
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform init -backend-config=backend.hcl
+
+      - name: Terraform Destroy
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform destroy -auto-approve

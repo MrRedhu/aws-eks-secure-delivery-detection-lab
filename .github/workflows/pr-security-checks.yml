@@ -1,0 +1,122 @@
+name: PR Security Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  app-container-and-policy:
+    name: App, Container, and Kubernetes Policy Gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run App Tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install -r lambda/guardduty_finding_router/requirements.txt
+          pip install pytest httpx
+          pytest app/tests lambda/guardduty_finding_router/tests
+
+      - name: Build Docker Image
+        run: docker build -t secure-demo-api:${{ github.sha }} app/
+
+      - name: Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          format: sarif
+          output: trivy-fs-results.sarif
+
+      - name: Upload Trivy Filesystem SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs-results.sarif
+          category: trivy-fs
+
+      - name: Trivy Image Scan
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: secure-demo-api:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+          format: sarif
+          output: trivy-image-results.sarif
+
+      - name: Upload Trivy Image SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image-results.sarif
+          category: trivy-image
+
+      - name: Install Kyverno CLI
+        run: |
+          curl -fsSLO https://github.com/kyverno/kyverno/releases/download/v1.12.0/kyverno-cli_v1.12.0_linux_x86_64.tar.gz
+          tar -xzf kyverno-cli_v1.12.0_linux_x86_64.tar.gz
+          sudo install kyverno /usr/local/bin/kyverno
+
+      - name: Kyverno Manifest Scan
+        run: |
+          kyverno apply policies/kyverno --resource kubernetes/namespace.yaml
+          kyverno apply policies/kyverno --resource kubernetes/service-account.yaml
+          kyverno apply policies/kyverno --resource kubernetes/deployment.yaml
+          kyverno apply policies/kyverno --resource kubernetes/service.yaml
+          kyverno apply policies/kyverno --resource kubernetes/network-policy.yaml
+
+  terraform:
+    name: Terraform and IaC Security Gates
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/envs/dev
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Format
+        run: terraform fmt -check -recursive ../../
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Run Checkov Security Scan
+        uses: bridgecrewio/checkov-action@v12.1347.0
+        with:
+          directory: terraform/
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+          skip_check: CKV_AWS_18,CKV_AWS_109,CKV_AWS_111,CKV_AWS_144,CKV_AWS_274,CKV_AWS_356,CKV_TF_1,CKV_TF_2,CKV2_AWS_56,CKV2_AWS_62,CKV2_AWS_64
+
+      - name: Upload Checkov SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: checkov

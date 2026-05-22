@@ -1,8 +1,20 @@
 variable "environment" { type = string }
 variable "project" { type = string }
 variable "github_repo" { type = string }
+variable "github_oidc_subjects" {
+  type    = list(string)
+  default = []
+}
 
 data "aws_caller_identity" "current" {}
+
+locals {
+  allowed_subjects = length(var.github_oidc_subjects) > 0 ? var.github_oidc_subjects : [
+    "repo:${var.github_repo}:ref:refs/heads/main",
+    "repo:${var.github_repo}:pull_request",
+    "repo:${var.github_repo}:environment:dev"
+  ]
+}
 
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
@@ -27,7 +39,7 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           },
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
+            "token.actions.githubusercontent.com:sub" = local.allowed_subjects
           }
         }
       }

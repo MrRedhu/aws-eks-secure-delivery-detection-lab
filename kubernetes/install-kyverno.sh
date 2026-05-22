@@ -14,6 +14,6 @@ echo "Waiting for Kyverno to be ready..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=120s
 
 echo "Applying custom Kyverno policies..."
-kubectl apply -f ../policies/
+kubectl apply -f ../policies/kyverno --recursive
 
 echo "Kyverno installation complete!"

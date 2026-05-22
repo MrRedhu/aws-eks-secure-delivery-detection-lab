@@ -1,0 +1,6 @@
+# Optional ingress placeholder.
+# The MVP exposes the app through the ClusterIP service and port-forwarding:
+# kubectl -n secure-demo port-forward svc/secure-demo-api 8080:80
+#
+# Add an AWS Load Balancer Controller ingress only after installing the
+# controller and deciding whether the lab should create an internet-facing ALB.

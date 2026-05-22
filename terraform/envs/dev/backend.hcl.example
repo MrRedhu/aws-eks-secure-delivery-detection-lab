@@ -1,0 +1,5 @@
+bucket         = "eks-sec-delivery-dev-tfstate-123456789012"
+key            = "dev/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "aws-eks-secure-delivery-detection-lab-dev-tf-locks"
+encrypt        = true

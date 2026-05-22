@@ -6,23 +6,70 @@ variable "cluster_name" { type = string }
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+data "aws_iam_policy_document" "lambda_kms" {
+  statement {
+    sid     = "EnableAccountAdministration"
+    actions = ["kms:*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "AllowCloudWatchLogs"
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${data.aws_region.current.name}.amazonaws.com"]
+    }
+    resources = ["*"]
+  }
+}
+
+resource "aws_kms_key" "lambda" {
+  description         = "KMS key for GuardDuty router Lambda and logs"
+  enable_key_rotation = true
+  policy              = data.aws_iam_policy_document.lambda_kms.json
+}
+
+resource "aws_kms_alias" "lambda" {
+  name          = "alias/${var.project}-${var.environment}-gd-router"
+  target_key_id = aws_kms_key.lambda.key_id
+}
+
 resource "aws_guardduty_detector" "primary" {
   # checkov:skip=CKV2_AWS_3:Organization/Region specific GuardDuty not required for single account lab
   enable = true
+}
+
+resource "aws_guardduty_detector_feature" "eks_audit" {
+  detector_id = aws_guardduty_detector.primary.id
+  name        = "EKS_AUDIT_LOGS"
+  status      = "ENABLED"
 }
 
 resource "aws_guardduty_detector_feature" "eks_runtime" {
   detector_id = aws_guardduty_detector.primary.id
   name        = "EKS_RUNTIME_MONITORING"
   status      = "ENABLED"
+
+  additional_configuration {
+    name   = "EKS_ADDON_MANAGEMENT"
+    status = "ENABLED"
+  }
 }
 
-# checkov:skip=CKV_AWS_119:Allow SecurityHub to be managed manually if Config is not setup
-resource "aws_securityhub_account" "primary" {}
-
 resource "aws_sns_topic" "alerts" {
-  name = "${var.project}-${var.environment}-security-alerts"
-  # checkov:skip=CKV_AWS_26:Encryption not required for lab notifications
+  name              = "${var.project}-${var.environment}-security-alerts"
+  kms_master_key_id = "alias/aws/sns"
 }
 
 resource "aws_sns_topic_subscription" "email" {
@@ -64,10 +111,26 @@ resource "aws_iam_role_policy" "lambda_sns" {
   })
 }
 
+resource "aws_iam_role_policy" "lambda_kms" {
+  name = "kms-decrypt"
+  role = aws_iam_role.lambda_exec.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = [
+        "kms:Decrypt",
+        "kms:DescribeKey"
+      ]
+      Effect   = "Allow"
+      Resource = aws_kms_key.lambda.arn
+    }]
+  })
+}
+
 data "archive_file" "router_zip" {
   type        = "zip"
   source_file = "${path.module}/src/router.py"
-  output_path = "${path.module}/router.zip"
+  output_path = "${path.root}/.terraform/gd-router.zip"
 }
 
 resource "aws_lambda_function" "router" {
@@ -77,6 +140,7 @@ resource "aws_lambda_function" "router" {
   handler          = "router.lambda_handler"
   runtime          = "python3.11"
   source_code_hash = data.archive_file.router_zip.output_base64sha256
+  kms_key_arn      = aws_kms_key.lambda.arn
 
   environment {
     variables = {
@@ -86,10 +150,19 @@ resource "aws_lambda_function" "router" {
 
   # checkov:skip=CKV_AWS_116:DLQ not needed for lab
   # checkov:skip=CKV_AWS_272:Code signing not needed for lab
-  # checkov:skip=CKV_AWS_173:KMS encryption of env vars not needed for lab
   # checkov:skip=CKV_AWS_117:VPC attachment not needed for lab
   # checkov:skip=CKV_AWS_115:Concurrency limit not needed for lab
   # checkov:skip=CKV_AWS_50:X-Ray tracing not needed for lab
+}
+
+resource "aws_cloudwatch_log_group" "router" {
+  name              = "/aws/lambda/${aws_lambda_function.router.function_name}"
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.lambda.arn
+}
+
+output "sns_topic_arn" {
+  value = aws_sns_topic.alerts.arn
 }
 
 resource "aws_cloudwatch_event_rule" "gd_findings" {

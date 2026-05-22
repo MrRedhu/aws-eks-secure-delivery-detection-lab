@@ -36,17 +36,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r app/requirements.txt
+          pip install -r lambda/guardduty_finding_router/requirements.txt
           pip install pytest httpx
-          pytest app/tests
+          pytest app/tests lambda/guardduty_finding_router/tests
 
       - name: Trivy Filesystem Scan (Secrets and Misconfigs)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-fs-results.sarif'
           severity: 'CRITICAL,HIGH'
+          exit-code: '1'
 
       - name: Upload Trivy FS SARIF
         if: always()
@@ -59,13 +61,14 @@ jobs:
         run: docker build -t secure-demo-api:${{ github.sha }} app/
 
       - name: Trivy Image Scan (Vulnerabilities)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: 'secure-demo-api:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
+          exit-code: '1'
 
       - name: Upload Trivy Image SARIF
         if: always()
@@ -82,4 +85,8 @@ jobs:
 
       - name: Kyverno Manifest Scan
         run: |
-          kyverno apply policies/ --resource kubernetes/
+          kyverno apply policies/kyverno --resource kubernetes/namespace.yaml
+          kyverno apply policies/kyverno --resource kubernetes/service-account.yaml
+          kyverno apply policies/kyverno --resource kubernetes/deployment.yaml
+          kyverno apply policies/kyverno --resource kubernetes/service.yaml
+          kyverno apply policies/kyverno --resource kubernetes/network-policy.yaml

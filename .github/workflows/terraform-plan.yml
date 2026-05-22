@@ -36,32 +36,43 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Write Backend Config
+        run: |
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          cat > backend.hcl <<EOF
+          bucket         = "eks-sec-delivery-dev-tfstate-${ACCOUNT_ID}"
+          key            = "dev/terraform.tfstate"
+          region         = "us-east-1"
+          dynamodb_table = "aws-eks-secure-delivery-detection-lab-dev-tf-locks"
+          encrypt        = true
+          EOF
+
       - name: Terraform Format
         id: fmt
         run: terraform fmt -check -recursive ../../
 
       - name: Terraform Init
         id: init
-        run: terraform init
+        run: terraform init -backend-config=backend.hcl
 
       - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
 
       - name: Run Checkov Security Scan
-        uses: bridgecrewio/checkov-action@master
+        uses: bridgecrewio/checkov-action@v12.1347.0
         with:
           directory: terraform/
           framework: terraform
           output_format: cli,sarif
           output_file_path: console,results.sarif
-          skip_check: CKV_AWS_274,CKV_TF_1,CKV_TF_2,CKV2_AWS_64,CKV2_AWS_56 # Skips for lab environment allowed permissions
+          skip_check: CKV_AWS_18,CKV_AWS_109,CKV_AWS_111,CKV_AWS_144,CKV_AWS_274,CKV_AWS_356,CKV_TF_1,CKV_TF_2,CKV2_AWS_56,CKV2_AWS_62,CKV2_AWS_64 # Skips for lab environment allowed permissions, KMS key-policy wildcards, and low-value S3 lab controls
 
       - name: Upload Checkov SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: terraform/envs/dev/results.sarif
+          sarif_file: results.sarif
           category: checkov
 
       - name: Terraform Plan
