@@ -1,7 +1,7 @@
 variable "region" { default = "us-east-1" }
 variable "environment" { default = "dev" }
 variable "project" { default = "aws-eks-secure-delivery-detection-lab" }
-variable "alert_email" { default = "admin@example.com" }
+variable "alert_email" { default = "aaryanredhu@gmail.com" }
 variable "cluster_endpoint_public_access" { default = false }
 variable "cluster_endpoint_public_access_cidrs" {
   type    = list(string)
