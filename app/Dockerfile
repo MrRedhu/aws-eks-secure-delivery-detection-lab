@@ -10,6 +10,7 @@ WORKDIR /app
 
 # Install dependencies first (leverage Docker cache)
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
