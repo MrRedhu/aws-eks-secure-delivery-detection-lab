@@ -1,6 +1,11 @@
 name: Destroy Dev
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/destroy-dev.yml'
   workflow_dispatch:
     inputs:
       confirm:
@@ -17,10 +22,26 @@ env:
   TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
 
 jobs:
+  validate:
+    name: Validate Destroy Workflow
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+
+      - name: Terraform Format
+        working-directory: terraform/envs/dev
+        run: terraform fmt -check -recursive ../../
+
   destroy:
     name: Destroy Dev Infrastructure
     runs-on: ubuntu-latest
-    if: github.event.inputs.confirm == 'destroy-dev'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.confirm == 'destroy-dev'
 
     steps:
       - name: Checkout Code

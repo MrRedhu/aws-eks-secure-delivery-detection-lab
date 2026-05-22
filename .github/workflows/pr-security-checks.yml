@@ -1,6 +1,16 @@
 name: PR Security Checks
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'lambda/**'
+      - 'kubernetes/**'
+      - 'policies/**'
+      - 'terraform/**'
+      - '.github/workflows/pr-security-checks.yml'
   pull_request:
     branches:
       - main

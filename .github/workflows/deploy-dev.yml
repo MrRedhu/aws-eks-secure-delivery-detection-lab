@@ -1,6 +1,11 @@
 name: Deploy Dev
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/deploy-dev.yml'
   workflow_dispatch:
     inputs:
       cluster_endpoint_public_access_cidrs:
@@ -18,9 +23,28 @@ env:
   TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
 
 jobs:
+  validate:
+    name: Validate Deploy Workflow
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Validate Render Inputs
+        run: |
+          test -f app/Dockerfile
+          test -f kubernetes/namespace.yaml
+          test -f kubernetes/service-account.yaml
+          test -f kubernetes/deployment.yaml
+          grep -q 'APP_IRSA_ROLE_ARN_PLACEHOLDER' kubernetes/service-account.yaml
+          grep -q 'placeholder' kubernetes/deployment.yaml
+
   deploy:
     name: Provision AWS and Deploy App
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout Code
