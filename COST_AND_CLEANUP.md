@@ -10,17 +10,22 @@ Running this lab on AWS will incur hourly charges. The primary cost drivers are:
 We have implemented an **AWS Budget** to alert you if the monthly spending exceeds a predefined threshold (default $20).
 
 ## Cleanup Instructions
-To stop incurring charges, you must destroy the infrastructure when you are done testing. 
+To stop incurring charges, you must destroy the infrastructure when you are done testing.
 
-1. Destroy the Kyverno policies (optional, Terraform will handle cluster deletion):
+1. If the EKS endpoint is private and you are outside the VPC, temporarily enable a scoped `/32` access window or run cleanup from a VPC-connected host.
+
+2. Destroy the Kubernetes resources if you want a clean app teardown before Terraform:
    ```bash
-   kubectl delete -f policies/
+   kubectl delete -f kubernetes/network-policy.yaml
+   kubectl delete -f kubernetes/service.yaml
+   kubectl delete -f kubernetes/deployment.yaml
+   kubectl delete -f kubernetes/service-account.yaml
+   kubectl delete -f kubernetes/namespace.yaml
    ```
 
-2. Destroy the AWS Infrastructure:
+3. Destroy the AWS infrastructure:
    ```bash
-   cd terraform/envs/dev
-   terraform destroy -auto-approve
+   terraform -chdir=terraform/envs/dev destroy -auto-approve
    ```
 
 Verify in the AWS Console that the EKS Cluster, NAT Gateways, and Load Balancers have been fully removed.

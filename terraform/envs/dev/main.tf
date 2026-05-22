@@ -1,7 +1,15 @@
 variable "region" { default = "us-east-1" }
 variable "environment" { default = "dev" }
 variable "project" { default = "aws-eks-secure-delivery-detection-lab" }
-variable "alert_email" { default = "aaryanredhu@gmail.com" }
+variable "alert_email" {
+  description = "Email endpoint for SNS security and budget alerts. Set with terraform.tfvars or TF_VAR_alert_email."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alert_email))
+    error_message = "alert_email must be a valid email address."
+  }
+}
 variable "cluster_endpoint_public_access" { default = false }
 variable "cluster_endpoint_public_access_cidrs" {
   type    = list(string)

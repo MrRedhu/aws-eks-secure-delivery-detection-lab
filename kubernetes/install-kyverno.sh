@@ -1,19 +1,16 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "Adding Kyverno Helm repository..."
-helm repo add kyverno https://kyverno.github.io/kyverno/
-helm repo update
+KYVERNO_VERSION="${KYVERNO_VERSION:-v1.17.1}"
 
-echo "Installing Kyverno..."
-helm upgrade --install kyverno kyverno/kyverno \
-  -n kyverno --create-namespace \
-  --set admissionController.replicas=1
+echo "Installing Kyverno ${KYVERNO_VERSION} with server-side apply..."
+kubectl apply --server-side --force-conflicts \
+  -f "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/install.yaml"
 
-echo "Waiting for Kyverno to be ready..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kyverno -n kyverno --timeout=120s
+echo "Waiting for Kyverno deployments..."
+kubectl -n kyverno wait --for=condition=available deployment --all --timeout=300s
 
 echo "Applying custom Kyverno policies..."
 kubectl apply -f ../policies/kyverno --recursive
 
-echo "Kyverno installation complete!"
+echo "Kyverno installation complete."

@@ -15,6 +15,7 @@ permissions:
 env:
   AWS_REGION: us-east-1
   TF_DIR: terraform/envs/dev
+  TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
 
 jobs:
   deploy:

@@ -15,6 +15,9 @@ permissions:
   contents: read
   security-events: write
 
+env:
+  TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
+
 jobs:
   terraform-checks:
     name: Terraform Security and Plan

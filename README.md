@@ -1,136 +1,141 @@
-# AWS EKS Secure Delivery & Detection Lab
+# AWS EKS Secure Delivery and Detection Lab
 
 ![CI/CD Pipeline](https://github.com/MrRedhu/aws-eks-secure-delivery-detection-lab/actions/workflows/ci-pipeline.yml/badge.svg)
 ![Terraform Security](https://github.com/MrRedhu/aws-eks-secure-delivery-detection-lab/actions/workflows/terraform-plan.yml/badge.svg)
 
-An enterprise-grade, end-to-end secure delivery pipeline and runtime threat detection lab built on AWS Elastic Kubernetes Service (EKS). 
+End-to-end cloud security portfolio project for secure software delivery, hardened Kubernetes admission control, and AWS runtime threat detection on Amazon EKS.
 
-This project demonstrates how to securely architect, deliver, and monitor a containerized application in the cloud. It implements **DevSecOps** best practices by shifting security left into the CI/CD pipeline and extending it right into the runtime environment using native AWS security services and CNCF open-source tools.
+This lab provisions a private-by-default EKS environment, builds and deploys a hardened FastAPI workload, enforces Kubernetes policy with Kyverno, and routes high-severity GuardDuty findings through EventBridge, Lambda, and SNS.
 
----
+## What This Demonstrates
 
-## 🏗️ Architecture
+- Secure AWS infrastructure with Terraform modules for VPC, EKS, ECR, KMS, CloudTrail, AWS Config, Security Hub, GuardDuty, and budget alerts.
+- Passwordless GitHub Actions deployment using AWS OIDC rather than static cloud keys.
+- Hardened Kubernetes workload settings: non-root user, dropped Linux capabilities, no privilege escalation, read-only root filesystem, resource limits, seccomp, network policy, and private ECR image source.
+- Runtime identity isolation with IAM Roles for Service Accounts (IRSA).
+- Admission control with Kyverno policies that reject unsafe Kubernetes workloads.
+- Detection and response flow for high-severity GuardDuty findings using EventBridge, Lambda, and SNS.
 
-### Secure Delivery Pipeline
-1. **Developer Push**: Code is pushed to GitHub.
-2. **Infrastructure Validation**: GitHub Actions run `checkov` to scan Terraform IaC for misconfigurations before deployment.
-3. **Container Security**: The FastAPI Python application is containerized and scanned with `Trivy` to block high/critical vulnerabilities and hardcoded secrets.
-4. **Admission Control**: Kubernetes manifests are validated locally against `Kyverno` policies to ensure compliance (no privileged containers, enforce resource limits).
+## Current Verified State
 
-### Runtime Threat Detection
-Once deployed on AWS EKS, the cluster is actively monitored:
-- **GuardDuty EKS Protection**: Analyzes Kubernetes audit logs and runtime behavior to detect threats (e.g., reverse shells, crypto-mining).
-- **Security Hub**: Aggregates security posture and compliance checks.
-- **Automated Routing**: AWS EventBridge captures high-severity findings and triggers an AWS Lambda function.
-- **Alerting**: The Lambda parses the threat intelligence and dispatches a formatted alert to the administrator via Amazon SNS.
+The dev environment has been deployed and validated in `us-east-1`. Account-specific values are redacted in the public documentation.
+
+| Area | Result |
+|------|--------|
+| Terraform apply | Complete |
+| Terraform drift | Clean, no changes |
+| EKS endpoint posture | Private endpoint enabled, public endpoint disabled |
+| App deployment | `secure-demo-api` rolled out successfully |
+| Image deployed | `<account-id>.dkr.ecr.us-east-1.amazonaws.com/aws-eks-secure-delivery-detection-lab-dev-api:d1bfc69` |
+| App health | `/health` returned `{"status":"ok"}` |
+| IRSA | `AWS_ROLE_ARN` and web identity token injected into pod |
+| Kyverno workload result | secure-demo workload passed all 6 policies |
+| Tests | 6 passed |
+| Checkov | 182 passed, 0 failed, 6 skipped |
+
+See [EVIDENCE_SUMMARY.md](EVIDENCE_SUMMARY.md) for command-level evidence.
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph CI/CD [GitHub Actions CI/CD Pipeline]
-        A[Git Push] --> B[Checkov: IaC Scan]
-        A --> C[Pytest: Unit Tests]
-        C --> D[Trivy: Docker Image Scan]
-        D --> E[Kyverno CLI: Manifest Validation]
-    end
+    Dev[Developer Push] --> GH[GitHub Actions]
+    GH --> Tests[Pytest]
+    GH --> IaC[Checkov Terraform Scan]
+    GH --> ImageScan[Trivy Filesystem and Image Scan]
+    GH --> PolicyScan[Kyverno CLI Manifest Scan]
 
-    subgraph AWS [AWS Cloud Environment]
-        F[Amazon ECR]
-        G[EKS Cluster]
-        H[GuardDuty]
-        I[EventBridge]
-        J[AWS Lambda]
-        K[Amazon SNS]
-    end
+    GH --> OIDC[AWS OIDC Role Assumption]
+    OIDC --> ECR[Amazon ECR]
+    OIDC --> EKS[Amazon EKS]
 
-    E -- Deploy --> F
-    F -- Pull Image --> G
-    G -- Runtime Audit Logs --> H
-    H -- High Severity Finding --> I
-    I -- Trigger --> J
-    J -- Parse & Format --> K
+    ECR --> Pod[Hardened FastAPI Pod]
+    EKS --> Kyverno[Kyverno Admission Policies]
+    Pod --> IRSA[IAM Role for Service Account]
+
+    EKS --> GuardDuty[GuardDuty EKS Protection]
+    GuardDuty --> EventBridge[EventBridge Rule]
+    EventBridge --> Lambda[Finding Router Lambda]
+    Lambda --> SNS[SNS Security Alerts]
+    GuardDuty --> SecurityHub[Security Hub]
 ```
 
----
+## Repository Map
 
-## 🛠️ Technology Stack
+| Path | Purpose |
+|------|---------|
+| `terraform/bootstrap` | One-time backend and GitHub OIDC bootstrap |
+| `terraform/envs/dev` | Dev environment composition and outputs |
+| `terraform/modules` | Reusable AWS modules |
+| `app` | FastAPI demo service and tests |
+| `lambda/guardduty_finding_router` | GuardDuty finding formatter and SNS publisher |
+| `kubernetes` | Namespace, service account, deployment, service, and network policy |
+| `policies/kyverno` | Admission policies for hardened workloads |
+| `.github/workflows` | CI, Terraform plan, deploy, and destroy workflows |
+| `runbooks` | Incident response and triage procedures |
+| `evidence` | Portfolio evidence folders |
 
-- **Cloud Provider:** Amazon Web Services (AWS)
-- **Infrastructure as Code:** Terraform (Modules: VPC, EKS, ECR, IAM, KMS)
-- **Containerization & App:** Docker, Python, FastAPI
-- **CI/CD:** GitHub Actions
-- **Security Tools:**
-  - **Checkov:** IaC Security Scanning
-  - **Trivy:** Container Vulnerability & Secret Scanning
-  - **Kyverno:** Kubernetes Native Policy Management / Admission Control
-  - **Amazon GuardDuty:** Runtime Threat Detection
-  - **AWS Security Hub:** Posture Management
+## Security Controls
 
----
+| Phase | Control | Implementation |
+|-------|---------|----------------|
+| Code | IaC scanning | Checkov in CI and local validation |
+| Code | Secret and filesystem scan | Trivy filesystem scan |
+| Build | Image CVE scan | Trivy image scan, high/critical gating |
+| Deploy | Cloud authentication | GitHub OIDC role, no static AWS keys |
+| Deploy | Kubernetes admission | Kyverno ClusterPolicies |
+| Runtime | Pod hardening | Security context, seccomp, read-only filesystem, resource limits |
+| Runtime | AWS least privilege | IRSA service account annotation |
+| Runtime | Network containment | Default-deny namespace policy with explicit app/DNS/HTTPS egress |
+| Detect | Cloud and EKS threat detection | GuardDuty EKS audit/runtime protection |
+| Respond | Alert routing | EventBridge to Lambda to SNS |
 
-## 🛡️ Threat Model Mitigations
+## Deployment Notes
 
-| Threat Vector | Mitigation Strategy | Tooling |
-|--------------|---------------------|---------|
-| **Vulnerable Base Images** | Pipeline breaks if Critical/High CVEs are found in the Dockerfile or base image. | Trivy (CI) |
-| **Hardcoded Secrets** | Filesystem scan prevents AWS Keys or API tokens from being committed. | Trivy (CI) |
-| **Cloud Misconfigurations** | Blocks insecure IaC (e.g., unencrypted ECR, open Security Groups). | Checkov (CI) |
-| **Container Escapes** | Blocks privileged pods, enforces read-only root filesystems, and requires resource limits. | Kyverno (Admission) |
-| **Runtime Exploitation** | Detects unauthorized executions, reverse shells, or access to sensitive EC2 metadata. | GuardDuty (Runtime) |
+The EKS API endpoint is private by default. For local deployment testing, temporarily enable public endpoint access to a single `/32`, deploy, then return it to private-only.
 
----
-
-## 🚀 Deployment Runbook
-
-### Prerequisites
-- AWS CLI configured with Administrator access.
-- Terraform (`>= 1.5.0`) installed.
-- Docker & kubectl installed.
-
-### 1. Provision Infrastructure
-Deploy the underlying AWS network, EKS cluster, container registry, and threat detection pipeline.
-```bash
-cd terraform/envs/dev
-terraform init
-terraform apply -auto-approve
-```
-*Note: You will receive an email from AWS SNS asking you to confirm your subscription for GuardDuty alerts.*
-
-### 2. Connect to the EKS Cluster
-Update your local `kubeconfig` to communicate with the newly provisioned cluster.
-```bash
-aws eks update-kubeconfig --region us-east-1 --name aws-eks-secure-delivery-detection-lab-dev
+```powershell
+$env:TF_VAR_cluster_endpoint_public_access='true'
+$env:TF_VAR_cluster_endpoint_public_access_cidrs='["YOUR_PUBLIC_IP/32"]'
+terraform -chdir=terraform/envs/dev apply -auto-approve
 ```
 
-### 3. Deploy Kyverno Admission Controller
-Install the Kyverno helm chart and apply the security policies to the cluster.
-```bash
-cd kubernetes
-./install-kyverno.sh
+After deployment:
+
+```powershell
+Remove-Item Env:\TF_VAR_cluster_endpoint_public_access
+Remove-Item Env:\TF_VAR_cluster_endpoint_public_access_cidrs
+terraform -chdir=terraform/envs/dev apply -auto-approve
 ```
 
-### 4. Deploy the Application
-Deploy the hardened FastAPI application.
-```bash
-kubectl apply -f hardened-deployment.yaml
+For GitHub-hosted runner deployment, use the `Deploy Dev` workflow input `cluster_endpoint_public_access_cidrs` with a tightly scoped `/32`. For a more production-like path, use a self-hosted runner inside the VPC.
+
+## Local Validation
+
+```powershell
+terraform fmt -recursive terraform
+terraform -chdir=terraform/envs/dev validate -no-color
+.venv\Scripts\python.exe -m checkov.main -d terraform/ --framework terraform --skip-path terraform/envs/dev/.terraform --skip-check CKV_AWS_18,CKV_AWS_109,CKV_AWS_111,CKV_AWS_144,CKV_AWS_274,CKV_AWS_356,CKV_TF_1,CKV_TF_2,CKV2_AWS_56,CKV2_AWS_62,CKV2_AWS_64
+.venv\Scripts\pytest.exe app/tests/ lambda/guardduty_finding_router/tests/
+kyverno apply policies/kyverno --resource kubernetes/deployment.yaml
 ```
 
-### 5. Test the Security Boundaries
-Attempt to deploy the purposely vulnerable manifest. It will be instantly rejected by Kyverno!
-```bash
-kubectl apply -f insecure-deployment.yaml
-# Expected Output: Error from server: admission webhook "validate.kyverno.svc-fail" denied the request...
+## Cleanup
+
+This lab creates billable AWS resources, including EKS, NAT Gateway, EC2 nodes, GuardDuty, CloudTrail logs, and related storage. Destroy the dev stack when finished:
+
+```powershell
+terraform -chdir=terraform/envs/dev destroy -auto-approve
 ```
 
----
+Confirm in AWS that EKS, NAT Gateway, EC2 worker nodes, and load balancer resources are gone. See [COST_AND_CLEANUP.md](COST_AND_CLEANUP.md).
 
-## 🧹 Cleanup
+## Portfolio Narrative
 
-To destroy all infrastructure and stop incurring AWS charges:
-```bash
-cd terraform/envs/dev
-terraform destroy -auto-approve
-```
+This project is designed to show practical Cloud Security Engineering, DevSecOps, and Detection Engineering skills in one cohesive lab:
 
----
-
-*This project was built to demonstrate an understanding of Cloud Security, Kubernetes Administration, and DevSecOps engineering.*
+- Prevent insecure infrastructure and workloads from shipping.
+- Deploy through short-lived identities and private infrastructure.
+- Enforce runtime least privilege.
+- Detect suspicious EKS and AWS behavior.
+- Route actionable findings to a human alert channel.

@@ -7,3 +7,5 @@ Building this DevSecOps pipeline provided valuable insights into securing a clou
 3. **The Importance of OIDC**: Managing static AWS keys for CI/CD is a major security risk. Implementing GitHub OIDC authentication vastly reduces the attack surface.
 4. **Detection is Not Response**: Setting up GuardDuty is only half the battle. Without EventBridge, Lambda, and SNS to parse and route the findings to a human, critical alerts can easily be missed.
 5. **Infrastructure as Code**: Terraform modules make it easy to enforce tagging strategies and manage complex IAM relationships (like IRSA) systematically.
+6. **Private EKS Changes the Deployment Model**: A private endpoint is the right default posture, but it requires a deliberate deployment path such as a VPC runner, VPN, or a short-lived `/32` access window.
+7. **Admission Policies Need Platform Exceptions**: Application workload policies should not accidentally block managed system agents such as GuardDuty or Kubernetes control-plane components.

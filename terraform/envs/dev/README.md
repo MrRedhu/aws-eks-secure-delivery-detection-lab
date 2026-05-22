@@ -13,6 +13,9 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` and set:
 - `cluster_endpoint_public_access`: keep `false` for the hardened posture, or set `true` temporarily for GitHub-hosted runner or workstation `kubectl` access.
 - `cluster_endpoint_public_access_cidrs`: when public access is enabled, use one or more `/32` CIDRs.
 
+Do not commit `terraform.tfvars`; it is ignored by Git. For GitHub Actions,
+store the alert address in the repository secret `ALERT_EMAIL`.
+
 ## Safe command order
 
 ```bash
