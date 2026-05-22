@@ -1,22 +1,32 @@
-.PHONY: test docker-build tf-fmt tf-validate checkov trivy-fs kyverno-scan
+.PHONY: help init plan apply destroy test scan-iac scan-image
+
+help:
+	@echo "Available commands:"
+	@echo "  make init        - Initialize Terraform"
+	@echo "  make plan        - Run Terraform plan"
+	@echo "  make apply       - Deploy infrastructure to AWS"
+	@echo "  make destroy     - Destroy infrastructure on AWS"
+	@echo "  make test        - Run Python unit tests"
+	@echo "  make scan-iac    - Run Checkov against Terraform code"
+	@echo "  make scan-image  - Run Trivy against Dockerfile"
+
+init:
+	cd terraform/envs/dev && terraform init
+
+plan:
+	cd terraform/envs/dev && terraform plan
+
+apply:
+	cd terraform/envs/dev && terraform apply -auto-approve
+
+destroy:
+	cd terraform/envs/dev && terraform destroy -auto-approve
 
 test:
-	pytest app/tests
+	pytest app/tests/
 
-docker-build:
-	docker build -t secure-demo-api:local app/
+scan-iac:
+	checkov -d terraform/
 
-tf-fmt:
-	cd terraform && terraform fmt -recursive
-
-tf-validate:
-	cd terraform/envs/dev && terraform init && terraform validate
-
-checkov:
-	checkov -d terraform --framework terraform
-
-trivy-fs:
-	trivy fs --scanners vuln,secret,misconfig .
-
-kyverno-scan:
-	kyverno apply policies/kyverno/ --resource kubernetes/
+scan-image:
+	trivy config app/Dockerfile
