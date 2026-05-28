@@ -41,7 +41,7 @@ jobs:
           pytest app/tests lambda/guardduty_finding_router/tests
 
       - name: Trivy Filesystem Scan (Secrets and Misconfigs)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -61,7 +61,7 @@ jobs:
         run: docker build -t secure-demo-api:${{ github.sha }} app/
 
       - name: Trivy Image Scan (Vulnerabilities)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
         with:
           image-ref: 'secure-demo-api:${{ github.sha }}'
           format: 'sarif'
